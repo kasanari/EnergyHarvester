@@ -17,6 +17,6 @@ CONTIKI_PROJECT += test-potent
 endif
 
 all: $(CONTIKI_PROJECT)
-CONTIKI = /home/jakob/contiki #Change to your contiki path
+CONTIKI = /home/jakob/contiki
 CONTIKI_WITH_RIME = 1
 include $(CONTIKI)/Makefile.include
