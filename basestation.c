@@ -25,10 +25,14 @@ static void recv(struct broadcast_conn *c, const linkaddr_t *from) {
 
 	/* 0bxxxxx allows us to write binary values */
 	/* for example, 0b10 is 2 */
+    uint8_t *ptr;
+    char msg[4];
+    ptr = packetbuf_dataptr();
+    memcpy(&msg, ptr, sizeof(msg));
 
 	leds_off(LEDS_ALL);
 	leds_on(count & 0b111);
-    printf("Hej.\n");
+    printf("Recieved message: %s\n", msg);
 }
 
 /* Broadcast handle to receive and send (identified) broadcast
