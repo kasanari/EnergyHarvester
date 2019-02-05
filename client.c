@@ -4,6 +4,7 @@
 #include "dev/button-sensor.h"
 #include "dev/leds.h"
 #include "dev/cc2420/cc2420.h"
+#include "dev/z1-phidgets.h"
 
 #include "clicker.h"
 
@@ -34,6 +35,8 @@ PROCESS_THREAD(client_process, ev, data) {
 
 	/* Activate the button sensor. */
 	SENSORS_ACTIVATE(button_sensor);
+    SENSORS_ACTIVATE(phidgets);
+
 	/* Open the broadcast handle, use the rime channel
 	 * defined by CLICKER_CHANNEL. */
 	broadcast_open(&bc, CLICKER_CHANNEL, &bc_callback);
@@ -54,10 +57,10 @@ PROCESS_THREAD(client_process, ev, data) {
         static struct etimer et;
         etimer_set(&et, CLOCK_SECOND);
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
-
+        int phidget_value = phidgets.value(PHIDGET5V_2);
 		//leds_toggle(LEDS_RED);
 		/* Copy the string "hej" into the packet buffer. */
-		packetbuf_copyfrom("hej", 4);
+		packetbuf_copyfrom(&phidget_value, sizeof(int));
 		/* Send the content of the packet buffer using the
 		 * broadcast handle. */
 		broadcast_send(&bc);
