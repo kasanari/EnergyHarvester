@@ -34,7 +34,6 @@ PROCESS_THREAD(client_process, ev, data) {
 	PROCESS_BEGIN();
 
 	/* Activate the button sensor. */
-	SENSORS_ACTIVATE(button_sensor);
     SENSORS_ACTIVATE(phidgets);
 
 	/* Open the broadcast handle, use the rime channel
