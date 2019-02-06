@@ -56,9 +56,10 @@ PROCESS_THREAD(client_process, ev, data) {
         static struct etimer et;
         etimer_set(&et, CLOCK_SECOND);
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
-        int phidget_value = phidgets.value(PHIDGET5V_2);
-		//leds_toggle(LEDS_RED);
-		/* Copy the string "hej" into the packet buffer. */
+
+		int phidget_value = phidgets.value(PHIDGET3V_2);
+
+		/* Copy the adc value into the packet buffer. */
 		packetbuf_copyfrom(&phidget_value, sizeof(int));
 		/* Send the content of the packet buffer using the
 		 * broadcast handle. */
