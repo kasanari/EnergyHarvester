@@ -4,3 +4,5 @@ obj_z1
 symbols.*
 *.a
 *.map
+*.ihex
+__pycache_
