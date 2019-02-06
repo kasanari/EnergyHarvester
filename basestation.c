@@ -23,8 +23,6 @@ static int count = 0;
 static void recv(struct broadcast_conn *c, const linkaddr_t *from) {
 	count++;
 
-	/* 0bxxxxx allows us to write binary values */
-	/* for example, 0b10 is 2 */
     uint8_t *ptr;
     int adc_value = 0;
     ptr = packetbuf_dataptr();
@@ -32,7 +30,7 @@ static void recv(struct broadcast_conn *c, const linkaddr_t *from) {
 
 	leds_off(LEDS_ALL);
 	leds_on(count & 0b111);
-    printf("Recieved value: %d\n", adc_value);
+    printf("%d\n", adc_value);
 }
 
 /* Broadcast handle to receive and send (identified) broadcast
