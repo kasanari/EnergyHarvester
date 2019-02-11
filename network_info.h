@@ -1,5 +1,5 @@
-#ifndef _CLICKER_H
-#define _CLICKER_H
+#ifndef _NETWORK_H
+#define _NETWORK_H
 
 /* Rime channel used for this application. */
 #define CLICKER_CHANNEL 130
