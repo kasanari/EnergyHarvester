@@ -6,7 +6,7 @@
 #include "dev/cc2420/cc2420.h"
 #include "dev/z1-phidgets.h"
 
-#include "clicker.h"
+#include "network_info.h"
 
 /* Declare our "main" process, the client process*/
 PROCESS(client_process, "Clicker client");

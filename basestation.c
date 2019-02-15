@@ -4,7 +4,7 @@
 #include "dev/leds.h"
 #include "dev/cc2420/cc2420.h"
 
-#include "clicker.h"
+#include "network_info.h"
 
 /* Declare our "main" process, the basestation_process */
 PROCESS(basestation_process, "Clicker basestation");
