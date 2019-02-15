@@ -6,3 +6,4 @@ symbols.*
 *.map
 *.ihex
 __pycache_
+build
