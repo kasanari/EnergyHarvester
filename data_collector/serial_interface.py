@@ -1,26 +1,33 @@
-import serial, glob, os
-
+import serial, time
 import serial_utils
 
-#import matplotlib.pyplot as plt
+def read_from_serial_forever():
+    ser = serial_init()
 
-ser = serial.Serial(timeout=2)
-ser.baudrate = 115200
+    adc_values = []
 
-comPort = serial_utils.findPort()
-print(comPort)
-ser.port = comPort
-
-ser.open()
-
-time_scale = range(1,)
-adc_values = []
-
-while(1):
-    line = ser.read_until()
-    value = int(line[0:-1])
-    print(value)
+    while(1):
+        line = ser.read_until()
+        value = int(line[0:-1])
+        print(value)
     adc_values.append(value)
-ser.close()
+    ser.close()
+
+def send_action(node_id, action):
+    timestamp = int(time.time())
+    string_to_send = f'{node_id},{action},{timestamp}\n'
+    encoded_string = string_to_send.encode('utf-8')
+    ser = serial_init()
+    ser.write(encoded_string)
+    ser.close()
+
+def receive_data():
+    ser = serial_init()
+    line = ser.read_until()
+    ser.close()
+    return line
+
+
+
 
 
