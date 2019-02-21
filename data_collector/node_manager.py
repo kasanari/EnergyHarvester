@@ -30,6 +30,9 @@ class Node:
         elif self.energy_level > self.threshold_upper:
             self.state = IDLE
 
+    def __repr__(self):
+        return f"[{self.node_id, self.energy_level}]"
+
 
 class NodeManager:
     """Manages a table of nodes contained in the network"""
