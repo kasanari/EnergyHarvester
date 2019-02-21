@@ -1,13 +1,11 @@
-#ifndef _SERIAL_H
-#define _SERIAL_H
+#ifndef _PYTHON_INTERFACE_H
+#define _PYTHON_INTERFACE_H
 
-string format = ""
+#include "common.h"
 
 const char *DATA_HEADER = "data"; // header to indicate that data follows
 const char *ADD_NODE_HEADER = "add_node"; // header to indicate that the following number is the id of a node to add
 const char *REMOVE_NODE_HEADER = "remove_node"; // header to indicate that the following number is the id of a node to remove
-
-typedef enum action{CHARGE = 1, SLEEP = 2, GATHER = 3, INVALID = 4} action_t;
 
 typedef struct python_msg { // struct which describes the parts of a message recieved from the computer
     int node_id;           //node to send order to
@@ -15,10 +13,10 @@ typedef struct python_msg { // struct which describes the parts of a message rec
     long time_stamp;    // current time of computer
 } python_msg_t;
 
-typdef struct data {
+typedef struct {
     int node_id; // the node that this data is coming from
     int energy_value; //the energy level of the node
-} data_t
+} data_t;
 
 void send_data_to_computer(data_t data);
 
