@@ -6,11 +6,12 @@ SLEEPING = "sleeping"
 CHARGING = "charging"
 IDLE = "idle"
 
+
 class Node:
     """Represents a node in the network"""
-    def __init__(self, id, energy_level = 0, state = SLEEPING, threshold_upper = 2.5, threshold_lower = 2, charge_rate = 0.1, discharge_rate = 0.2):
-        self.id = id #The id of the node
-        self.energy_level = energy_level #
+    def __init__(self, node_id, energy_level=0, state=SLEEPING, threshold_upper=2.5, threshold_lower=2, charge_rate=0.1, discharge_rate=0.2):
+        self.node_id = node_id  # The id of the node
+        self.energy_level = energy_level
         self.state = state
         self.threshold_upper = threshold_upper
         self.threshold_lower = threshold_lower
@@ -19,14 +20,14 @@ class Node:
 
     def update(self): 
         """For simulation purposes. Update the states of the node."""
-        if (CHARGING):
+        if CHARGING:
             self.energy_level += self.charge_rate
-        elif (GATHERING):
+        elif GATHERING:
             self.energy_level -= self.discharge_rate
 
-        if (self.energy_level < self.threshold_lower):
+        if self.energy_level < self.threshold_lower:
             self.state = SLEEPING
-        elif (self.energy_level > self.threshold_upper):
+        elif self.energy_level > self.threshold_upper:
             self.state = IDLE
 
 
@@ -34,11 +35,11 @@ class NodeManager:
     """Manages a table of nodes contained in the network"""
     def __init__(self):
         self.number_of_nodes = 0
-        self.nodes = pd.DataFrame(columns=['id','energy'])
+        self.nodes = pd.DataFrame(columns=['id', 'energy'])
         self.nodes.set_index('id', inplace=True, verify_integrity=True)
     
-    def remove_node(self, id):
-        self.nodes = self.nodes.drop(index=id)
+    def remove_node(self, node_id):
+        self.nodes = self.nodes.drop(index=node_id)
 
     def add_node(self, node):
         self.nodes.loc[node.id] = node.energy_level
@@ -46,12 +47,12 @@ class NodeManager:
     def update_node(self, node):
         self.nodes.loc[node.id] = node.energy_level
 
-    def get_node(self, id):
-        return self.nodes.loc[id]
+    def get_node(self, node_id):
+        return self.nodes.loc[node_id]
 
-    def node_is_in_system(self, id):
+    def node_is_in_system(self, node_id):
         try:
-            value = self.nodes.loc[id]
+            value = self.nodes.loc[node_id]
         except KeyError:
             return False
 

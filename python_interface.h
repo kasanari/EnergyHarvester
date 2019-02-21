@@ -7,7 +7,6 @@ const char *DATA_HEADER = "data"; // header to indicate that data follows
 const char *ADD_NODE_HEADER = "add_node"; // header to indicate that the following number is the id of a node to add
 const char *REMOVE_NODE_HEADER = "remove_node"; // header to indicate that the following number is the id of a node to remove
 
-
 typedef struct { // struct which describes the parts of a message recieved from the computer
     int node_id;           //node to send order to
     action_t action;    // action to be performed
