@@ -1,5 +1,7 @@
 import random
 import node_manager
+import serial_interface
+from serial_interface import GATHER, CHARGE
 
 random.seed()
 
@@ -8,18 +10,9 @@ def fake_data_generator():
     energy_level = random.randint(0, 5)
     return f"{id},{energy_level}"
 
-def parse_data(data_string):
-    result = data_string.split(',')
-    node_id = None
-    energy_level = None
-    try:
-        node_id = int(result[0])
-    except ValueError as error:
-        print("invalid ID character")
-    try:
-        energy_level = float(result[1])
-    except ValueError as error:
-        print("invalid data characters")
 
-    if ((node_id is not None) and (energy_level is not None)):
-        return Node(node_id, energy_level)
+def make_decision(node):
+    if (node.energy_level > 2.5):
+        send_action(node.id, GATHER)
+    elif (node.energy_level < 2.1):
+        send_action(node.id, CHARGE)
