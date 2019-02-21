@@ -7,7 +7,7 @@ import serial_utils
 ser = serial.Serial(timeout=2)
 ser.baudrate = 115200
 
-comPort = serial_utils.findPort()
+comPort = serial_utils.find_port()
 print(comPort)
 ser.port = comPort
 
