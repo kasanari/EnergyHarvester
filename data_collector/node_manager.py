@@ -1,3 +1,4 @@
+import pandas as pd
 
 """Node states"""
 GATHERING = "gathering"
@@ -19,9 +20,9 @@ class Node:
     def update(self): 
         """For simulation purposes. Update the states of the node."""
         if (CHARGING):
-            self.energy_level += self.charging_rate
+            self.energy_level += self.charge_rate
         elif (GATHERING):
-            self.energy_level -= self.discharging_rate
+            self.energy_level -= self.discharge_rate
 
         if (self.energy_level < self.threshold_lower):
             self.state = SLEEPING
@@ -30,15 +31,28 @@ class Node:
 
 
 class NodeManager:
-    """Manages the list of nodes contained in the network"""
+    """Manages a table of nodes contained in the network"""
     def __init__(self):
         self.number_of_nodes = 0
-        self.nodes = []
+        self.nodes = pd.DataFrame(columns=['id','energy'])
+        self.nodes.set_index('id', inplace=True, verify_integrity=True)
     
     def remove_node(self, id):
-        self.nodes = [node for node in self.nodes if node.node_id != id]
-        self.number_of_nodes -= 1
+        self.nodes = self.nodes.drop(index=id)
 
     def add_node(self, node):
-        self.nodes.append(node)
-        self.number_of_nodes += 1
+        self.nodes.loc[node.id] = node.energy_level
+
+    def update_node(self, node):
+        self.nodes.loc[node.id] = node.energy_level
+
+    def get_node(self, id):
+        return self.nodes.loc[id]
+
+    def node_is_in_system(self, id):
+        try:
+            value = self.nodes.loc[id]
+        except KeyError:
+            return False
+
+        return value is not None
