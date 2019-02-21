@@ -41,12 +41,12 @@ def receive_message():
     ser = serial_utils.serial_init()
     line = ser.read_until()
     ser.close()
-    return parse_msg(line)
+    return parse_msg(line.decode('utf-8'))
 
 
 def parse_msg(msg):
     """Parse a message, splitting it into a header part and node data part"""
-    result = msg.split(',')
+    result = msg[:-1].split(',')
     header = None
     node = None
     try:
@@ -55,7 +55,7 @@ def parse_msg(msg):
         print("invalid ID character")
 
     if header is not None:
-        node = parse_data(result[1:])
+        node = Node(result[1], result[2])
 
     return header, node
 
