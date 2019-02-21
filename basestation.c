@@ -10,8 +10,8 @@
 
 
 #define MAX_ORDERS 20
-#define PERIOD 100000
-#define DATA_TIMEOUT 30000
+#define PERIOD CLOCK_SECOND
+#define DATA_TIMEOUT CLOCK_SECOND/2
 
 /* Declare our "main" process, the basestation_process */
 PROCESS(basestation_process, "Clicker basestation");
@@ -102,8 +102,9 @@ PROCESS_THREAD(basestation_process, ev, data) {
     broadcast();            
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et_data));
     transmission_complete();
+	leds_on(LEDS_RED);
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et_period));
-
+	leds_off(LEDS_RED);
   }
 
   broadcast_close(&bc);
@@ -117,8 +118,9 @@ PROCESS_THREAD(serial_process, ev, data) {
   for(;;){
     PROCESS_YIELD();
     if(ev == serial_line_event_message){
-      python_msg_t python_msg = parse_msg_from_computer((char*) data);
-      if(python_msg.action != CHARGE && order_count < MAX_ORDERS){
+    python_msg_t python_msg = parse_msg_from_computer((char*) data);
+	leds_toggle(LEDS_BLUE);
+    if(python_msg.action != CHARGE && order_count < MAX_ORDERS){
 	order_buff[order_count].action = python_msg.action;
 	order_buff[order_count].node_id = python_msg.node_id;
 	time_stamp = python_msg.time_stamp;
