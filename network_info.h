@@ -16,7 +16,15 @@
 typedef struct{
   uint16_t node_id;
   int energy_value;
+  int order_number;
 } status_msg_t;
+
+
+typedef struct{
+  int order_number;
+  int no_orders;
+  long time_stamp;
+}order_header_t;
 
 
 typedef struct{
