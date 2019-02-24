@@ -1,5 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 
 """Node states"""
 GATHERING = "gathering"
@@ -40,25 +41,30 @@ class Node:
 
 class NodeManager:
     """Manages a table of nodes contained in the network"""
+    max_size = 10
+
+    
     def __init__(self):
         self.number_of_nodes = 0
-        self.nodes = pd.DataFrame(columns=['id', 'energy'])
-        self.nodes.set_index('id', inplace=True, verify_integrity=True)
+        self.nodes = pd.DataFrame(columns=['timestamp'])
+        self.history = pd.DataFrame(columns=['timestamp'])
+        self.history.set_index('timestamp', inplace=True)
+        self.data_cache = {}
     
     def remove_node(self, node_id):
         self.nodes = self.nodes.drop(index=node_id)
 
     def add_node(self, node):
-        self.nodes.loc[node.node_id] = node.energy_level
+        length = len(self.history.index)
+        self.history[node.node_id] = np.repeat(np.nan, length)
+        self.number_of_nodes += 1
 
     def update_node(self, node):
-        self.nodes.loc[node.node_id] = node.energy_level
-
-    def get_node(self, node_id):
-        return self.nodes.loc[node_id]
+        self.data_cache[node.node_id] = node.energy_level
 
     def get_energy_levels(self):
-        return self.nodes['energy']
+        columns = self.history.columns[:-1]
+        return self.history[columns]
 
     def node_is_in_system(self, node_id):
         try:
@@ -67,6 +73,16 @@ class NodeManager:
             return False
 
         return value is not None
+
+    def commit(self, timestamp):
+
+        real_t = pd.to_datetime(timestamp, unit='s')
+        timestamp_dict = {'timestamp':real_t}
+        self.history = self.history.append({**timestamp_dict,**self.data_cache}, ignore_index=True)
+        self.data_cache = {}
+
+    def reset(self):
+        self.data_cache = {}
 
     def plot_nodes(self):
         fig = plt.figure()
