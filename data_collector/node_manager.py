@@ -1,4 +1,5 @@
 import pandas as pd
+import matplotlib.pyplot as plt
 
 """Node states"""
 GATHERING = "gathering"
@@ -45,10 +46,10 @@ class NodeManager:
         self.nodes = self.nodes.drop(index=node_id)
 
     def add_node(self, node):
-        self.nodes.loc[node.id] = node.energy_level
+        self.nodes.loc[node.node_id] = node.energy_level
 
     def update_node(self, node):
-        self.nodes.loc[node.id] = node.energy_level
+        self.nodes.loc[node.node_id] = node.energy_level
 
     def get_node(self, node_id):
         return self.nodes.loc[node_id]
@@ -60,3 +61,9 @@ class NodeManager:
             return False
 
         return value is not None
+
+    def plot_nodes(self):
+        fig = plt.figure()
+        energy_levels = self.nodes['energy']
+        plt.bar(range(len(energy_levels)), energy_levels)
+        fig.show()
