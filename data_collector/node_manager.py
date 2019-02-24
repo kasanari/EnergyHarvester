@@ -32,7 +32,10 @@ class Node:
             self.state = IDLE
 
     def __repr__(self):
-        return f"[{self.node_id, self.energy_level}]"
+        return f"[{self.node_id}, {self.energy_level}]"
+
+    def __str__(self):
+        return f"Node with id {self.node_id} and {self.energy_level}V"
 
 
 class NodeManager:
@@ -53,6 +56,9 @@ class NodeManager:
 
     def get_node(self, node_id):
         return self.nodes.loc[node_id]
+
+    def get_energy_levels(self):
+        return self.nodes['energy']
 
     def node_is_in_system(self, node_id):
         try:
