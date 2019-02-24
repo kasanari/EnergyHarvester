@@ -26,5 +26,5 @@ def serial_init():
     com_port = find_port()
     ser.port = com_port
     ser.open()
-    print(f'Initialized serial using port {com_port}')
+    #print(f'Initialized serial using port {com_port}')
     return ser
