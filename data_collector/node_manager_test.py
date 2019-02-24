@@ -22,3 +22,6 @@ print("Check if node 1 is in the system")
 print(manager.node_is_in_system(node1.node_id))
 print("Check if node with id 3 is in the system")
 print(manager.node_is_in_system(3))
+
+
+manager.plot_nodes()
