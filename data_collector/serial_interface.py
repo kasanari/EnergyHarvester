@@ -45,6 +45,9 @@ def receive_message():
 
 
 def parse_msg(msg):
+    if msg == '':
+        return None, None
+
     """Parse a message, splitting it into a header part and node data part"""
     result = msg[:-1].split(',')
     header = None
@@ -55,22 +58,21 @@ def parse_msg(msg):
         print("invalid ID character")
 
     if header is not None:
-        node = Node(result[1], result[2])
+        node = parse_data(result[1:])
 
     return header, node
 
 
-def parse_data(data_string):
+def parse_data(data):
     """Parse the data section of a message"""
-    result = data_string.split(',')
     node_id = None
     energy_level = None
     try:
-        node_id = int(result[0])
+        node_id = int(data[0])
     except ValueError:
         print("invalid ID character")
     try:
-        energy_level = float(result[1])
+        energy_level = float(data[1])/10
     except ValueError:
         print("invalid data characters")
 
