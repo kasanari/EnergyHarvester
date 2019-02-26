@@ -6,6 +6,7 @@
 #define DATA_HEADER "data" // header to indicate that data follows
 #define ADD_NODE_HEADER "add_node" // header to indicate that the following number is the id of a node to add
 #define REMOVE_NODE_HEADER "remove_node" // header to indicate that the following number is the id of a node to remove
+#define COMMIT_HEADER "commit" // header to indicate that all current node information has been sent
 
 typedef struct { // struct which describes the parts of a message recieved from the computer
     int node_id;           //node to send order to
@@ -22,5 +23,7 @@ typedef struct {
 void send_data_to_computer(data_t data);
 
 python_msg_t parse_msg_from_computer(char* msg);
+
+void transmission_complete();
 
 #endif
