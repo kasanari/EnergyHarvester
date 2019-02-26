@@ -3,8 +3,9 @@ import threading
 import time
 import random
 import numpy as np
+import serial_utils
 from node_manager import NodeManager, Node
-from serial_interface import ADD_NODE_HEADER, DATA_HEADER, REMOVE_NODE_HEADER
+from serial_interface import ADD_NODE_HEADER, DATA_HEADER, REMOVE_NODE_HEADER, COMMIT_HEADER, GATHER, CHARGE, INVALID
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
@@ -40,6 +41,7 @@ class DataListener(threading.Thread):
         self._period = 1
         self._nextCall = time.time()
         random.seed()
+        self.ser = serial_utils.serial_init()
 
     def run(self):
         node1 = Node(1, 0)
@@ -48,24 +50,24 @@ class DataListener(threading.Thread):
         manager.add_node(node2)
         while True:
             print("Fetching data from fog node...")
-            # header, node = serial_interface.receive_message()
-            header = 'data'
-            node1.energy_level = random.randint(1, 50)
-            node2.energy_level = random.randint(1,50)
-            timestamp = time.process_time()
+            header, node = serial_interface.receive_message(self.ser)
+            # header = 'data'
+            # node1.energy_level = random.randint(1, 50)
+            # node2.energy_level = random.randint(1,50)
             print(f'Header: {header}')
             if header == DATA_HEADER:
-                self.node_manager.update_node(node1)
-                self.node_manager.update_node(node2)
+                print(f'\t{node}')
+                self.node_manager.update_node(node)
             elif header == ADD_NODE_HEADER:
                 self.node_manager.add_node(node)
             elif header == REMOVE_NODE_HEADER:
                 self.node_manager.remove_node(node.node_id)
-
-            self.node_manager.commit(time.time())
-            self._nextCall = self._nextCall + self._period
-            time.sleep(self._nextCall - time.time())
-
+            elif header == COMMIT_HEADER:
+                self.node_manager.commit(time.time())
+                print(f'\tSending orders...')
+                serial_interface.send_action(self.ser, 1, GATHER)
+                serial_interface.send_action(self.ser, 2, CHARGE)
+            
 
 manager = NodeManager()
 listener = DataListener(manager)
