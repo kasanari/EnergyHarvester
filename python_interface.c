@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "python_interface.h"
 
 void send_msg_to_computer(const char* header, data_t data) {
@@ -19,6 +20,17 @@ void remove_node_from_computer(int id) {
 }
 
 python_msg_t parse_msg_from_computer(char* msg) {
-    python_msg_t py_msg;
+    python_msg_t py_msg = {0, 0, 0};
+    char *token;
+    char delim[2] = " ";
+
+    py_msg.node_id = atoi(strtok(msg, delim));
+
+    py_msg.action = atoi(strtok(msg, delim));
+
+    py_msg.time_stamp = atoi(strtok(msg, delim));
+    
+    //printf("Parsed: Node=%d, Action=%d, Timestamp=%d\n", py_msg.node_id, py_msg.action, py_msg.time_stamp);
+
     return py_msg;
 }
