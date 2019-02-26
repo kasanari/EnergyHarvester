@@ -21,8 +21,7 @@ def find_port():
 
 
 def serial_init():
-    ser = serial.Serial(timeout=2)
-    ser.baudrate = 115200
+    ser = serial.Serial(timeout=2, write_timeout=2, baudrate=115200, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS)
     com_port = find_port()
     ser.port = com_port
     ser.open()
