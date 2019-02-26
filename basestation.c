@@ -73,6 +73,23 @@ static void broadcast()
   free(tmp_packet);
 }
 
+static void handle_python_msg(python_msg_t msg)
+{
+  if (msg.action != CHARGE && order_count < MAX_ORDERS)
+  {
+    leds_toggle(LEDS_BLUE);
+    order_buff[order_count].action = msg.action;
+    order_buff[order_count].node_id = msg.node_id;
+    time_stamp = msg.time_stamp;
+    order_count++;
+  }
+  else if (msg.action == CHARGE)
+  {
+    // TODO: code for charging node
+    leds_toggle(LEDS_GREEN);
+  }
+}
+
 /* Our main process. */
 PROCESS_THREAD(basestation_process, ev, data)
 {
@@ -98,13 +115,16 @@ PROCESS_THREAD(basestation_process, ev, data)
     etimer_set(&et_period, PERIOD);
     static struct etimer et_data;
     etimer_set(&et_data, DATA_TIMEOUT);
-
+    
     broadcast();
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et_data));
+    data_t data1 = {1, abs(rand() % 50)}; //Generate random data for testing
+    data_t data2 = {2, abs(rand() % 50)};
+    send_data_to_computer(data1);
+    send_data_to_computer(data2);
     transmission_complete();
-    leds_on(LEDS_RED);
+    leds_toggle(LEDS_RED);
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et_period));
-    leds_off(LEDS_RED);
   }
 
   broadcast_close(&bc);
@@ -120,19 +140,12 @@ PROCESS_THREAD(serial_process, ev, data)
     PROCESS_YIELD();
     if (ev == serial_line_event_message)
     {
-      python_msg_t python_msg = parse_msg_from_computer((char *)data);
-      leds_toggle(LEDS_BLUE);
-      if (python_msg.action != CHARGE && order_count < MAX_ORDERS)
-      {
-        order_buff[order_count].action = python_msg.action;
-        order_buff[order_count].node_id = python_msg.node_id;
-        time_stamp = python_msg.time_stamp;
-        order_count++;
-      }
-      else if (python_msg.action == CHARGE)
-      {
-        // TODO: code for charging node
-      }
+      char buffer[32];
+      strcpy(buffer, (char *)data);                              // Use a buffer to limit message length
+      printf("%s\n", buffer);                                    // Reply with message received
+      python_msg_t python_msg = parse_msg_from_computer(buffer); // Parse message to struct
+      print_python_msg(python_msg);                              // Reply with parsed data
+      handle_python_msg(python_msg);                             // Handle actions
     }
   }
   PROCESS_END();
