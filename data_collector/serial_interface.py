@@ -3,41 +3,44 @@ import serial_utils
 from node_manager import Node
 
 """Node actions"""
-GATHER = 1
+CHARGE = 1
 SLEEP = 2
-CHARGE = 3
+GATHER = 3
+INVALID = 4
 
 """Headers"""
 ADD_NODE_HEADER = "add_node"
 DATA_HEADER = "data"
 REMOVE_NODE_HEADER = "remove_node"
+COMMIT_HEADER = "commit"
 
 
 def read_from_serial_forever():
     """Read from serial port and print output forever"""
     ser = serial_utils.serial_init()
 
-    adc_values = []
-
     while True:
-        line = ser.read_until()
-        value = int(line[0:-1])
-        print(value)
-        adc_values.append(value)
+        header, node = receive_message(ser)
+        print(header)
+        print(node)
 
 
-def send_action(node_id, action):
+def send_action(ser, node_id, action):
     """Send an action and the id of the node to perform the action to the fog node"""
     timestamp = int(time.time())
+    string = f'{node_id},{action},{timestamp}\n'
+    send_string(ser, string)
+
+def send_string(ser, string):
+    ser.write(string.encode('utf-8'))
     print_reply(ser)
 
+def read_line(ser):
+    return ser.read_until().decode('utf-8')
 
-def receive_message():
+def receive_message(ser):
     """Read a line from the serial port and parse it"""
-    ser = serial_utils.serial_init()
-    line = ser.read_until()
-    ser.close()
-    return parse_msg(line.decode('utf-8'))
+    return parse_msg(read_line(ser))
 
 def print_reply(ser):
     reply = read_line(ser)
@@ -79,9 +82,3 @@ def parse_data(data):
 
     if (node_id is not None) and (energy_level is not None):
         return Node(node_id, energy_level)
-
-
-
-
-
-
