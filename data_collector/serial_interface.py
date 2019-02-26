@@ -29,11 +29,7 @@ def read_from_serial_forever():
 def send_action(node_id, action):
     """Send an action and the id of the node to perform the action to the fog node"""
     timestamp = int(time.time())
-    string_to_send = f'{node_id},{action},{timestamp}\n'
-    encoded_string = string_to_send.encode('utf-8')
-    ser = serial_utils.serial_init()
-    ser.write(encoded_string)
-    ser.close()
+    print_reply(ser)
 
 
 def receive_message():
@@ -43,6 +39,11 @@ def receive_message():
     ser.close()
     return parse_msg(line.decode('utf-8'))
 
+def print_reply(ser):
+    reply = read_line(ser)
+    print(f'\tNode received message: {reply[:-1]}')
+    parsed_reply = read_line(ser)
+    print(f'\tNode parsed message to: {parsed_reply[:-1]}')
 
 def parse_msg(msg):
     if msg == '':
