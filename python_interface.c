@@ -38,3 +38,28 @@ void transmission_complete() {
     data_t data = {0, 0}; //dummy data
     send_msg_to_computer(COMMIT_HEADER, data); 
 }
+
+static char* action_to_string(action_t action) {
+    switch (action)
+    {
+        case GATHER:
+            return "GATHER";
+            break;
+        case CHARGE:
+            return "CHARGE";
+            break;
+        case SLEEP:
+            return "SLEEP";
+            break;
+        case INVALID:
+            return "INVALID";
+            break;
+        default:
+            return "-";
+            break;
+    }
+}
+
+void print_python_msg(python_msg_t msg) {
+    printf("[Node=%d, Action=%s, Timestamp=%lu]\n", msg.node_id, action_to_string(msg.action), msg.time_stamp);
+}
