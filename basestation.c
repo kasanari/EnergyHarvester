@@ -8,10 +8,9 @@
 #include "python_interface.h"
 #include "network_info.h"
 
-
 #define MAX_ORDERS 20
 #define PERIOD CLOCK_SECOND
-#define DATA_TIMEOUT CLOCK_SECOND/2
+#define DATA_TIMEOUT CLOCK_SECOND / 2
 
 /* Declare our "main" process, the basestation_process */
 PROCESS(basestation_process, "Clicker basestation");
@@ -19,7 +18,6 @@ PROCESS(basestation_process, "Clicker basestation");
 PROCESS(serial_process, "Serial");
 
 AUTOSTART_PROCESSES(&basestation_process, &serial_process);
-
 
 // Holds the number of orders to send
 static int order_count = 0;
@@ -35,7 +33,8 @@ static long time_stamp = 0;
  * Whenever this node receives a packet for its broadcast handle,
  * this function will be called.
  */
-static void recv(struct broadcast_conn *c, const linkaddr_t *from) {
+static void recv(struct broadcast_conn *c, const linkaddr_t *from)
+{
   uint8_t *ptr;
   status_msg_t status_msg;
   ptr = packetbuf_dataptr();
@@ -43,39 +42,40 @@ static void recv(struct broadcast_conn *c, const linkaddr_t *from) {
   data_t data;
   data.node_id = status_msg.node_id;
   data.energy_value = status_msg.energy_value;
-  if(order_number == status_msg.order_number){
+  if (order_number == status_msg.order_number)
+  {
     send_data_to_computer(data);
   }
 }
 
-
 /* A structure holding a pointer to our callback function. */
-static struct broadcast_callbacks bc_callback = { recv };
+static struct broadcast_callbacks bc_callback = {recv};
 
 /* Broadcast handle to receive and send (identified) broadcast
  * packets. */
 static struct broadcast_conn bc;
 
 // this function will brodcast the order_buff and reset it to 0
-static void broadcast(){
+static void broadcast()
+{
   order_number++;
   int packet_size = sizeof(order_header_t) + sizeof(order_msg_t) * order_count;
-  void* tmp_packet = malloc(packet_size);
-  ((order_header_t*) tmp_packet) -> order_number = order_number;
-  ((order_header_t*) tmp_packet) -> no_orders = order_count;
-  ((order_header_t*) tmp_packet) -> time_stamp = time_stamp;
+  void *tmp_packet = malloc(packet_size);
+  ((order_header_t *)tmp_packet)->order_number = order_number;
+  ((order_header_t *)tmp_packet)->no_orders = order_count;
+  ((order_header_t *)tmp_packet)->time_stamp = time_stamp;
   memcpy((tmp_packet + sizeof(order_header_t)), order_buff, sizeof(order_msg_t) * order_count);
-  
+
   packetbuf_copyfrom(tmp_packet, packet_size);
   broadcast_send(&bc);
   order_count = 0;
-  memset(order_buff, 0, sizeof(order_msg_t)* MAX_ORDERS);
+  memset(order_buff, 0, sizeof(order_msg_t) * MAX_ORDERS);
   free(tmp_packet);
 }
 
-
 /* Our main process. */
-PROCESS_THREAD(basestation_process, ev, data) {
+PROCESS_THREAD(basestation_process, ev, data)
+{
   PROCESS_BEGIN();
 
   /* Open the broadcast handle, use the rime channel
@@ -92,43 +92,46 @@ PROCESS_THREAD(basestation_process, ev, data) {
   /* Main loop for sending periodic broadcasts to nodes,
    * and transmission_complete to computer */
 
-  
-  for(;;) {
+  for (;;)
+  {
     static struct etimer et_period;
     etimer_set(&et_period, PERIOD);
     static struct etimer et_data;
     etimer_set(&et_data, DATA_TIMEOUT);
- 	    
-    broadcast();            
+
+    broadcast();
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et_data));
     transmission_complete();
-	leds_on(LEDS_RED);
+    leds_on(LEDS_RED);
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et_period));
-	leds_off(LEDS_RED);
+    leds_off(LEDS_RED);
   }
 
   broadcast_close(&bc);
   PROCESS_END();
 }
 
-
 //  Thread that listens to the serial port puts orders in order buff.
-PROCESS_THREAD(serial_process, ev, data) {
+PROCESS_THREAD(serial_process, ev, data)
+{
   PROCESS_BEGIN();
-  for(;;){
+  for (;;)
+  {
     PROCESS_YIELD();
-    if(ev == serial_line_event_message){
-    python_msg_t python_msg = parse_msg_from_computer((char*) data);
-	leds_toggle(LEDS_BLUE);
-    if(python_msg.action != CHARGE && order_count < MAX_ORDERS){
-	order_buff[order_count].action = python_msg.action;
-	order_buff[order_count].node_id = python_msg.node_id;
-	time_stamp = python_msg.time_stamp;
-	order_count++;
+    if (ev == serial_line_event_message)
+    {
+      python_msg_t python_msg = parse_msg_from_computer((char *)data);
+      leds_toggle(LEDS_BLUE);
+      if (python_msg.action != CHARGE && order_count < MAX_ORDERS)
+      {
+        order_buff[order_count].action = python_msg.action;
+        order_buff[order_count].node_id = python_msg.node_id;
+        time_stamp = python_msg.time_stamp;
+        order_count++;
       }
-      else if(python_msg.action == CHARGE){
-	// TODO: code for charging node
-	
+      else if (python_msg.action == CHARGE)
+      {
+        // TODO: code for charging node
       }
     }
   }
