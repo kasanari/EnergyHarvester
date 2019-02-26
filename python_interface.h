@@ -26,4 +26,6 @@ python_msg_t parse_msg_from_computer(char* msg);
 
 void transmission_complete();
 
+void print_python_msg(python_msg_t msg);
+
 #endif
