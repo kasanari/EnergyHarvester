@@ -8,7 +8,6 @@ SLEEPING = "sleeping"
 CHARGING = "charging"
 IDLE = "idle"
 
-
 class Node:
     """Represents a node in the network"""
     def __init__(self, node_id, energy_level=0, state=SLEEPING, threshold_upper=2.5, threshold_lower=2, charge_rate=0.1, discharge_rate=0.2):
@@ -20,17 +19,24 @@ class Node:
         self.charge_rate = charge_rate
         self.discharge_rate = discharge_rate
 
-    def update(self): 
-        """For simulation purposes. Update the states of the node."""
-        if CHARGING:
+    def update(self, new_state):
+        """For simulation purposes. simulate sending an order to the node and getting an energy value back."""
+        return_value = None
+        if ((self.state == IDLE) or (self.state == GATHERING)):
+            self.state = new_state
+
+        if self.isCharging() or self.isSleeping():
             self.energy_level += self.charge_rate
-        elif GATHERING:
+        elif self.isGathering():
             self.energy_level -= self.discharge_rate
+            return_value = self.energy_level
 
         if self.energy_level < self.threshold_lower:
             self.state = SLEEPING
         elif self.energy_level > self.threshold_upper:
             self.state = IDLE
+
+        return return_value
 
     def __repr__(self):
         return f"[{self.node_id}, {self.energy_level}]"
@@ -38,6 +44,14 @@ class Node:
     def __str__(self):
         return f"Node with id {self.node_id} and {self.energy_level}V"
 
+    def isCharging(self):
+        return self.state == CHARGING
+    def isIdle(self):
+        return self.state == IDLE
+    def isGathering(self):
+        return self.state == GATHERING
+    def isSleeping(self):
+        return self.state == SLEEPING
 
 class NodeManager:
     """Manages a table of nodes contained in the network"""
@@ -46,13 +60,12 @@ class NodeManager:
     
     def __init__(self):
         self.number_of_nodes = 0
-        self.nodes = pd.DataFrame(columns=['timestamp'])
         self.history = pd.DataFrame(columns=['timestamp'])
         self.history.set_index('timestamp', inplace=True)
         self.data_cache = {}
     
     def remove_node(self, node_id):
-        self.nodes = self.nodes.drop(index=node_id)
+        self.nodes = self.history.drop(index=node_id)
 
     def add_node(self, node):
         length = len(self.history.index)
@@ -66,9 +79,12 @@ class NodeManager:
         columns = self.history.columns[:-1]
         return self.history[columns]
 
+    def get_most_recent_state(self):
+        return self.history.tail(1)[self.history.columns[:-1]]
+
     def node_is_in_system(self, node_id):
         try:
-            value = self.nodes.loc[node_id]
+            value = self.history[node_id]
         except KeyError:
             return False
 
@@ -84,8 +100,3 @@ class NodeManager:
     def reset(self):
         self.data_cache = {}
 
-    def plot_nodes(self):
-        fig = plt.figure()
-        energy_levels = self.nodes['energy']
-        plt.bar(range(len(energy_levels)), energy_levels)
-        fig.show()
