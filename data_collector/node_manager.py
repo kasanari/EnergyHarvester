@@ -2,15 +2,34 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
+from enum import Enum
+
+"""Node actions"""
+class Action(Enum):
+    CHARGE = 1
+    SLEEP = 2
+    GATHER = 3
+
 """Node states"""
 GATHERING = "gathering"
 SLEEPING = "sleeping"
 CHARGING = "charging"
 IDLE = "idle"
 
+def action_to_state(action : Action):
+    if action is Action.GATHER:
+        return GATHERING
+    elif action is Action.SLEEP:
+        return SLEEPING
+    elif action is Action.CHARGE:
+        return CHARGING
+    else:
+        return None
+
+
 class Node:
     """Represents a node in the network"""
-    def __init__(self, node_id, energy_level=0, state=SLEEPING, threshold_upper=2.5, threshold_lower=2, charge_rate=0.1, discharge_rate=0.2):
+    def __init__(self, node_id, energy_level=0, state=IDLE, threshold_upper=2.5, threshold_lower=2, charge_rate=0.1, discharge_rate=0.2):
         self.node_id = node_id  # The id of the node
         self.energy_level = energy_level
         self.state = state
@@ -19,11 +38,11 @@ class Node:
         self.charge_rate = charge_rate
         self.discharge_rate = discharge_rate
 
-    def update(self, new_state):
+    def update(self, action):
         """For simulation purposes. simulate sending an order to the node and getting an energy value back."""
         return_value = None
-        if ((self.state == IDLE) or (self.state == GATHERING)):
-            self.state = new_state
+        if self.isIdle() or self.isGathering():
+            self.state = action_to_state(action)
 
         if self.isCharging() or self.isSleeping():
             self.energy_level += self.charge_rate
