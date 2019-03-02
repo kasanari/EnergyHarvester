@@ -1,12 +1,7 @@
 import serial, time
 import serial_utils
-from node_manager import Node
+from node_manager import Node, Action
 
-"""Node actions"""
-CHARGE = 1
-SLEEP = 2
-GATHER = 3
-INVALID = 4
 
 """Headers"""
 ADD_NODE_HEADER = "add_node"
@@ -25,30 +20,30 @@ def read_from_serial_forever():
         print(node)
 
 
-def send_action(ser, node_id, action):
+def send_action(ser : serial.Serial, node_id : int, action : Action):
     """Send an action and the id of the node to perform the action to the fog node"""
     timestamp = int(time.time())
-    string = f'{node_id},{action},{timestamp}\n'
+    string = f'{node_id},{action.value},{timestamp}\n'
     send_string(ser, string)
 
-def send_string(ser, string):
+def send_string(ser : serial.Serial, string):
     ser.write(string.encode('utf-8'))
     print_reply(ser)
 
-def read_line(ser):
+def read_line(ser) -> str:
     return ser.read_until().decode('utf-8')
 
-def receive_message(ser):
+def receive_message(ser : serial.Serial) -> (str, Node):
     """Read a line from the serial port and parse it"""
     return parse_msg(read_line(ser))
 
-def print_reply(ser):
+def print_reply(ser : serial.Serial):
     reply = read_line(ser)
     print(f'\tNode received message: {reply[:-1]}')
     parsed_reply = read_line(ser)
     print(f'\tNode parsed message to: {parsed_reply[:-1]}')
 
-def parse_msg(msg):
+def parse_msg(msg : str) -> (str, Node):
     if msg == '':
         return None, None
 
@@ -67,7 +62,7 @@ def parse_msg(msg):
     return header, node
 
 
-def parse_data(data):
+def parse_data(data : list) -> Node:
     """Parse the data section of a message"""
     node_id = None
     energy_level = None
