@@ -4,8 +4,8 @@ import time
 import random
 import numpy as np
 import serial_utils
-from node_manager import NodeManager, Node
-from serial_interface import ADD_NODE_HEADER, DATA_HEADER, REMOVE_NODE_HEADER, COMMIT_HEADER, GATHER, CHARGE, INVALID
+from node_manager import NodeManager, Node, Action
+from serial_interface import ADD_NODE_HEADER, DATA_HEADER, REMOVE_NODE_HEADER, COMMIT_HEADER
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
@@ -65,8 +65,8 @@ class DataListener(threading.Thread):
             elif header == COMMIT_HEADER:
                 self.node_manager.commit(time.time())
                 print(f'\tSending orders...')
-                serial_interface.send_action(self.ser, 1, GATHER)
-                serial_interface.send_action(self.ser, 2, CHARGE)
+                serial_interface.send_action(self.ser, 1, Action.GATHER)
+                serial_interface.send_action(self.ser, 2, Action.CHARGE)
             
 
 manager = NodeManager()
