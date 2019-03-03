@@ -29,7 +29,7 @@ def action_to_state(action : Action):
 
 class Node:
     """Represents a node in the network"""
-    def __init__(self, node_id, energy_level=0, state=IDLE, threshold_upper=2.5, threshold_lower=2, charge_rate=0.1, discharge_rate=0.2):
+    def __init__(self, node_id, energy_level=0, state=IDLE, max_energy=5, threshold_upper=2.5, threshold_lower=2, charge_rate=0.1, discharge_rate=0.5):
         self.node_id = node_id  # The id of the node
         self.energy_level = energy_level
         self.state = state
@@ -37,6 +37,7 @@ class Node:
         self.threshold_lower = threshold_lower
         self.charge_rate = charge_rate
         self.discharge_rate = discharge_rate
+        self.max_energy = max_energy
 
     def update(self, action):
         """For simulation purposes. simulate sending an order to the node and getting an energy value back."""
@@ -45,9 +46,10 @@ class Node:
             self.state = action_to_state(action)
 
         if self.isCharging() or self.isSleeping():
-            self.energy_level += self.charge_rate
+            self.charge()
+            return_value = self.energy_level
         elif self.isGathering():
-            self.energy_level -= self.discharge_rate
+            self.discharge()
             return_value = self.energy_level
 
         if self.energy_level < self.threshold_lower:
@@ -62,6 +64,14 @@ class Node:
 
     def __str__(self):
         return f"Node with id {self.node_id} and {self.energy_level}V"
+
+    def charge(self):
+        if (self.energy_level <= self.max_energy):
+            self.energy_level += self.charge_rate
+
+    def discharge(self):
+        if (self.energy_level > 0):
+            self.energy_level -= self.discharge_rate
 
     def isCharging(self):
         return self.state == CHARGING
