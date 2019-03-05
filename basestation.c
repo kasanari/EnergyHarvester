@@ -8,9 +8,10 @@
 #include "python_interface.h"
 #include "network_info.h"
 
-#define MAX_ORDERS 20
+#define MAX_NODES 20
 #define PERIOD CLOCK_SECOND
 #define DATA_TIMEOUT CLOCK_SECOND / 2
+#define TOPOLOGY_TIMEOUT CLOCK_SECOND * 100
 
 /* Declare our "main" process, the basestation_process */
 PROCESS(basestation_process, "Clicker basestation");
@@ -19,14 +20,55 @@ PROCESS(serial_process, "Serial");
 
 AUTOSTART_PROCESSES(&basestation_process, &serial_process);
 
-// Holds the number of orders to send
+// Holds the number of orders to broadcast
 static int order_count = 0;
-// Holds the orders to send to nodes
-static order_msg_t order_buff[MAX_ORDERS] = {};
-// Serialnumber of the order
+// Holds the orders to broadcast
+static order_msg_t order_buff[MAX_NODES] = {};
+// Serialnumber of the current orders
 static int order_number = 0;
 // Latest time_stamp
 static long time_stamp = 0;
+
+// number of nodes in the current topology
+static int node_count = 0;
+// current topology of nodes
+
+typedef struct {
+  int node_id;
+  long last_contact;
+} node_t;
+
+static node_t topology[MAX_NODES] = {};
+
+static void update_topology(int node_id){
+  int node_exists = 0;
+  int i;
+  // Variant = node_count - i 
+  for( i = 0; i< node_count; ++i){
+
+    // node exist in topology
+    if(node_id == topology[i].node_id ){
+      node_exists = 1;
+      topology[i].last_contact = time_stamp;
+    }
+
+    // if no contact with node for a while then remove the node    
+    if(topology[i].last_contact < (time_stamp-TOPOLOGY_TIMEOUT)){ 
+      node_count--;
+      remove_node_from_computer(topology[i].node_id);
+      topology[i] = topology[node_count]; // overwrite the current index with the last node
+      i--; // loop this index again since another node where put there. 
+    }
+  }
+
+  // if the node in data dont exists
+  if(!node_exists && node_count < MAX_NODES){
+    topology[node_count].node_id =  node_id;
+    topology[node_count++].last_contact = time_stamp;    
+    add_node_to_computer(node_id);    
+  }
+}
+
 
 /* Callback function for received packets.
  *
@@ -42,10 +84,12 @@ static void recv(struct broadcast_conn *c, const linkaddr_t *from)
   data_t data;
   data.node_id = status_msg.node_id;
   data.energy_value = status_msg.energy_value;
+  update_topology(data.node_id);
   if (order_number == status_msg.order_number)
   {
     send_data_to_computer(data);
   }
+  
 }
 
 /* A structure holding a pointer to our callback function. */
@@ -69,13 +113,13 @@ static void broadcast()
   packetbuf_copyfrom(tmp_packet, packet_size);
   broadcast_send(&bc);
   order_count = 0;
-  memset(order_buff, 0, sizeof(order_msg_t) * MAX_ORDERS);
+  memset(order_buff, 0, sizeof(order_msg_t) * MAX_NODES);
   free(tmp_packet);
 }
 
 static void handle_python_msg(python_msg_t msg)
 {
-  if (msg.action != CHARGE && order_count < MAX_ORDERS)
+  if (msg.action != CHARGE && order_count < MAX_NODES)
   {
     leds_toggle(LEDS_BLUE);
     order_buff[order_count].action = msg.action;
