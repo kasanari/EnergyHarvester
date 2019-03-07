@@ -15,6 +15,7 @@
 #define DATA_TIMEOUT CLOCK_SECOND / 2
 #define TOPOLOGY_TIMEOUT CLOCK_SECOND * 100
 #define CHARGE_TIMEOUT CLOCK_SECOND * 5
+#define RESET_PERIOD CLOCK_SECOND * 10
 
 /* Declare our "main" process, the basestation_process */
 PROCESS(basestation_process, "Clicker basestation");
@@ -23,6 +24,8 @@ PROCESS(serial_process, "Serial");
 
 AUTOSTART_PROCESSES(&basestation_process, &serial_process);
 
+// is != 0 when resetting
+static int resetting = 0;
 // Holds the number of orders to broadcast
 static int order_count = 0;
 // Holds the orders to broadcast
@@ -94,7 +97,7 @@ static void recv(struct broadcast_conn *c, const linkaddr_t *from)
   data.node_id = status_msg.node_id;
   data.energy_value = status_msg.energy_value;
   update_topology(data.node_id);
-  if (order_number == status_msg.order_number)
+  if (order_number == status_msg.order_number && !resetting)
   {
     send_data_to_computer(data);
   }
@@ -139,11 +142,12 @@ static void handle_python_msg(python_msg_t msg)
   {
     // TODO: code for charging node
     leds_toggle(LEDS_GREEN);
-    power_toggle();
+    power_on();
     charge_time_stamp = time_stamp;
   }
+  
   if((time_stamp - charge_time_stamp) > CHARGE_TIMEOUT){
-    power_toggle();
+    power_off();
     charge_time_stamp = time_stamp; // Makes it wait before spamming relay_off again.
   }
 }
@@ -163,7 +167,7 @@ PROCESS_THREAD(basestation_process, ev, data)
 
   /* Initialize the relay */
   power_enable();
-  power_off();
+  power_on();
 
   /* Main loop for sending periodic broadcasts to nodes,
    * and transmission_complete to computer */
@@ -175,18 +179,18 @@ PROCESS_THREAD(basestation_process, ev, data)
     etimer_set(&et_period, PERIOD);
     static struct etimer et_data;
     etimer_set(&et_data, DATA_TIMEOUT);
-
-    broadcast();
-    
+	broadcast();
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et_data));
 
     // For testing:
     // data_t data1 = {order_count, abs(rand() % 50)};
     // send_data_to_computer(data1);
-    
-    transmission_complete();
+    if(!resetting){
+      transmission_complete();
+	}
     leds_toggle(LEDS_RED);
     
+	
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et_period));
   }
 
@@ -209,9 +213,21 @@ PROCESS_THREAD(serial_process, ev, data)
       printf("%s\n", buffer);                                    // Reply with message received
       python_msg_t python_msg = parse_msg_from_computer(buffer); // Parse message to struct
       print_python_msg(python_msg);                              // Reply with parsed data
-      handle_python_msg(python_msg);                             // Handle actions
-    }
-    
+	  if(python_msg.action != RESET){
+        handle_python_msg(python_msg); 		// Handle actions 
+	  }
+	  else {
+	    resetting = 1;
+		power_on();
+		order_count = 0;
+		order_number = 0;
+		node_count = 0;
+		static struct etimer reset_period;
+        etimer_set(&reset_period, RESET_PERIOD);
+		PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&reset_period));
+		resetting = 0;		  
+	  }	  
+    }    
   }
   PROCESS_END();
 }
