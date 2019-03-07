@@ -7,11 +7,14 @@
 #include "dev/cc2420/cc2420.h"
 #include "python_interface.h"
 #include "network_info.h"
+#include "dev/relay-phidget.h"
 
+#define POWER_PIN 3
 #define MAX_NODES 20
 #define PERIOD CLOCK_SECOND
 #define DATA_TIMEOUT CLOCK_SECOND / 2
 #define TOPOLOGY_TIMEOUT CLOCK_SECOND * 100
+#define CHARGE_TIMEOUT CLOCK_SECOND * 5
 
 /* Declare our "main" process, the basestation_process */
 PROCESS(basestation_process, "Clicker basestation");
@@ -28,6 +31,8 @@ static order_msg_t order_buff[MAX_NODES] = {};
 static int order_number = 0;
 // Latest time_stamp
 static long time_stamp = 0;
+// Charging started at this time
+static long charge_time_stamp = 0;
 
 // number of nodes in the current topology
 static int node_count = 0;
@@ -40,6 +45,11 @@ typedef struct {
 
 static node_t topology[MAX_NODES] = {};
 
+/* Function for updating topology
+ *
+ * Whenever contact is made with a node use this function to update the information 
+ * about topology and last contact.
+ */
 static void update_topology(int node_id){
   int node_exists = 0;
   int i;
@@ -49,19 +59,19 @@ static void update_topology(int node_id){
     // node exist in topology
     if(node_id == topology[i].node_id ){
       node_exists = 1;
-      topology[i].last_contact = time_stamp;
+      topology[i].last_contact = time_stamp; //update timestamp      
     }
 
     // if no contact with node for a while then remove the node    
     if(topology[i].last_contact < (time_stamp-TOPOLOGY_TIMEOUT)){ 
       node_count--;
-      remove_node_from_computer(topology[i].node_id);
+      // remove_node_from_computer(topology[i].node_id);
       topology[i] = topology[node_count]; // overwrite the current index with the last node
       i--; // loop this index again since another node where put there. 
     }
   }
 
-  // if the node in data dont exists
+  // if the node in data dont exists and there is place for more nodes
   if(!node_exists && node_count < MAX_NODES){
     topology[node_count].node_id =  node_id;
     topology[node_count++].last_contact = time_stamp;    
@@ -119,18 +129,24 @@ static void broadcast()
 
 static void handle_python_msg(python_msg_t msg)
 {
+  time_stamp = msg.time_stamp;
   if (msg.action != CHARGE && order_count < MAX_NODES)
   {
     leds_toggle(LEDS_BLUE);
     order_buff[order_count].action = msg.action;
-    order_buff[order_count].node_id = msg.node_id;
-    time_stamp = msg.time_stamp;
+    order_buff[order_count].node_id = msg.node_id;    
     order_count++;
   }
   else if (msg.action == CHARGE)
   {
     // TODO: code for charging node
     leds_toggle(LEDS_GREEN);
+    relay_on();
+    charge_time_stamp = time_stamp;
+  }
+  if((time_stamp - charge_time_stamp) > CHARGE_TIMEOUT){
+    relay_off();
+    charge_time_stamp = time_stamp; // Makes it wait before spamming relay_off again.
   }
 }
 
@@ -153,6 +169,9 @@ PROCESS_THREAD(basestation_process, ev, data)
   /* Main loop for sending periodic broadcasts to nodes,
    * and transmission_complete to computer */
 
+  relay_enable(POWER_PIN);
+  relay_off();
+  
   for (;;)
   {
     static struct etimer et_period;
@@ -162,10 +181,12 @@ PROCESS_THREAD(basestation_process, ev, data)
     
     broadcast();
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et_data));
-    data_t data1 = {1, abs(rand() % 50)}; //Generate random data for testing
+    /*
+    data_t data1 = {1, abs(rand() % 50)}; // for testing
     data_t data2 = {2, abs(rand() % 50)};
     send_data_to_computer(data1);
     send_data_to_computer(data2);
+    */
     transmission_complete();
     leds_toggle(LEDS_RED);
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et_period));
