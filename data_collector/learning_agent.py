@@ -1,16 +1,30 @@
 from keras.models import Sequential, InputLayer
 from keras.layers import Dense
 from node_manager import Node, Action
+from simulator import Simulation
 import numpy as np
+from collections import deque
+
+class Memory():
+    def __init__(self, max_size):
+        self.buffer = deque(maxlen=max_size)
+
+    def add(self, experience):
+        self.buffer.append(experience)
+
+    def sample(self):
+        buffer_size = len(self.buffer)
+        return self.buffer[np.random.randint(0, buffer_size)]
 
 class LearningAgent:
 
     def __init__(self, number_of_nodes):
         self.actions = [Action.GATHER, Action.CHARGE]
 
-        self.y = 0.95 # Learning rate
-        self.eps = 0.5  # Exploration rate
+        self.lr = 0.95 # Learning rate
+        self.expr = 0.1  # Exploration rate
 
+        self.memory = Memory(1000000)
         self.model = Sequential()
         self.model.add(InputLayer(batch_input_shape=(1, number_of_nodes)))
         self.model.add(Dense(5, activation='sigmoid'))
@@ -19,14 +33,32 @@ class LearningAgent:
 
         self.state = None
 
+    def pretrain(self, nodes, pretrain_length):
+        sim = Simulation(nodes)
+        state = sim.get_state()
+        for i in range(pretrain_length):
+            a = np.random.randint(0, len(self.actions)) # Random action
+            new_state, reward, done = sim.step(self.actions[a])
+
+            if done:
+                new_state = np.zeros(state.shape)
+                self.memory.add((state, a, reward, new_state, done)) # Add experience to memory
+                sim = Simulation(nodes) # Start a new episode
+                state = sim.get_state() # First we need a state
+
+            else:
+                self.memory.add((state, a, reward, new_state, done)) # Add experience to memory
+                state = new_state # Our state is now the next_state
+
     def make_action(self, state):
         self.prev_state = state #Store old state for learning
 
-        if np.random.random() < self.eps:
+        if np.random.random() < self.expr:
             a = np.random.randint(0, len(self.actions))  # Explore by picking a random action
         else:
             a = np.argmax(self.model.predict(state))  # Use network to predict which action to take
         self.prev_a = a
+        print(self.actions[a])
         return self.actions[a]
 
     def calculate_reward(self, energy_values, action):
@@ -47,9 +79,12 @@ class LearningAgent:
         return reward
 
     def learn(self, new_state):
-        r = self.calculate_reward(new_state, self.prev_a)
-        target = r + self.y * np.max(self.model.predict(new_state))    # Calculate Q-value based on new state
-        target_vec = self.model.predict(self.prev_state)[0]            # Get both Q-values for this state
-        target_vec[self.prev_a] = target                               # Update Q-value for the action we took
+        reward = self.calculate_reward(new_state, self.prev_a)
+        self.memory.add((self.prev_state, self.prev_a, reward, new_state)) # Add experience to memory
+        state, reward, action, new_state, _ = self.memory.sample()
 
-        self.model.fit(self.prev_state, target_vec.reshape(-1, 2), epochs=1, verbose=0)  # Fit neural network to predict the Q-values
+        Q_target = reward + self.lr * np.max(self.model.predict(new_state))   # Calculate Q-value based on new state
+        Q_values = self.model.predict(state)[0]                         # Get both Q-values for this state
+        Q_values[action] = Q_target                                     # Update Q-value for the action we took
+
+        self.model.fit(state, Q_values.reshape(-1, 2), epochs=1, verbose=0) # Fit neural network to predict the Q-values
