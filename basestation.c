@@ -7,10 +7,9 @@
 #include "dev/cc2420/cc2420.h"
 #include "python_interface.h"
 #include "network_info.h"
-#include "dev/relay-phidget.h"
+#include "power.h"
 
 
-#define POWER_PIN 3
 #define MAX_NODES 20
 #define PERIOD CLOCK_SECOND
 #define DATA_TIMEOUT CLOCK_SECOND / 2
@@ -140,11 +139,11 @@ static void handle_python_msg(python_msg_t msg)
   {
     // TODO: code for charging node
     leds_toggle(LEDS_GREEN);
-    relay_on();
+    power_toggle();
     charge_time_stamp = time_stamp;
   }
   if((time_stamp - charge_time_stamp) > CHARGE_TIMEOUT){
-    relay_off();
+    power_toggle();
     charge_time_stamp = time_stamp; // Makes it wait before spamming relay_off again.
   }
 }
@@ -163,8 +162,8 @@ PROCESS_THREAD(basestation_process, ev, data)
   cc2420_set_txpower(CC2420_TX_POWER);
 
   /* Initialize the relay */
-  relay_enable(POWER_PIN);
-  relay_off();
+  power_enable();
+  power_off();
 
   /* Main loop for sending periodic broadcasts to nodes,
    * and transmission_complete to computer */

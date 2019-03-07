@@ -7,7 +7,7 @@ ZOLERTIA_Z1SP=0
 
 CONTIKI_PROJECT = blink counter client basestation python_interface
 
-CONTIKI_SOURCEFILES += python_interface.c relay-phidget.c
+CONTIKI_SOURCEFILES += python_interface.c power.c
 
 MODULES += dev/sht11
 
