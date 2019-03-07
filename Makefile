@@ -5,10 +5,9 @@ endif
 # Enable to pull-in Z1SP specific test/source files
 ZOLERTIA_Z1SP=0
 
-CONTIKI_PROJECT = blink test-light-ziglet counter client basestation
+CONTIKI_PROJECT = blink test-light-ziglet counter client basestation python_interface
 
-CONTIKI_SOURCEFILES += reed-sensor.c sht25.c tlc59116.c light-ziglet.c \
-                       relay-phidget.c
+CONTIKI_SOURCEFILES += python_interface.c
 
 MODULES += dev/sht11
 
