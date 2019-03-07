@@ -9,6 +9,7 @@
 #include "network_info.h"
 #include "dev/relay-phidget.h"
 
+
 #define POWER_PIN 3
 #define MAX_NODES 20
 #define PERIOD CLOCK_SECOND
@@ -37,7 +38,6 @@ static long charge_time_stamp = 0;
 // number of nodes in the current topology
 static int node_count = 0;
 // current topology of nodes
-
 typedef struct {
   int node_id;
   long last_contact;
@@ -109,7 +109,7 @@ static struct broadcast_callbacks bc_callback = {recv};
  * packets. */
 static struct broadcast_conn bc;
 
-// this function will brodcast the order_buff and reset it to 0
+// this function will brodcast the order_buff to all the field_nodes and reset it to 0
 static void broadcast()
 {
   order_number++;
@@ -119,12 +119,11 @@ static void broadcast()
   ((order_header_t *)tmp_packet)->no_orders = order_count;
   ((order_header_t *)tmp_packet)->time_stamp = time_stamp;
   memcpy((tmp_packet + sizeof(order_header_t)), order_buff, sizeof(order_msg_t) * order_count);
-
   packetbuf_copyfrom(tmp_packet, packet_size);
-  broadcast_send(&bc);
+  broadcast_send(&bc);  
   order_count = 0;
   memset(order_buff, 0, sizeof(order_msg_t) * MAX_NODES);
-  free(tmp_packet);
+  free(tmp_packet); 
 }
 
 static void handle_python_msg(python_msg_t msg)
@@ -163,32 +162,32 @@ PROCESS_THREAD(basestation_process, ev, data)
   /* Set the radio's transmission power. */
   cc2420_set_txpower(CC2420_TX_POWER);
 
-  /* Whenever a packet is received,
-   * our callback function will be called. */
+  /* Initialize the relay */
+  relay_enable(POWER_PIN);
+  relay_off();
 
   /* Main loop for sending periodic broadcasts to nodes,
    * and transmission_complete to computer */
 
-  relay_enable(POWER_PIN);
-  relay_off();
-  
   for (;;)
   {
+    // Set events to fire after 2 different periods after this time
     static struct etimer et_period;
     etimer_set(&et_period, PERIOD);
     static struct etimer et_data;
     etimer_set(&et_data, DATA_TIMEOUT);
-    
+
     broadcast();
+    
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et_data));
-    /*
-    data_t data1 = {1, abs(rand() % 50)}; // for testing
-    data_t data2 = {2, abs(rand() % 50)};
-    send_data_to_computer(data1);
-    send_data_to_computer(data2);
-    */
+
+    // For testing:
+    // data_t data1 = {order_count, abs(rand() % 50)};
+    // send_data_to_computer(data1);
+    
     transmission_complete();
     leds_toggle(LEDS_RED);
+    
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et_period));
   }
 
@@ -203,6 +202,7 @@ PROCESS_THREAD(serial_process, ev, data)
   for (;;)
   {
     PROCESS_YIELD();
+    
     if (ev == serial_line_event_message)
     {
       char buffer[32];
@@ -212,6 +212,7 @@ PROCESS_THREAD(serial_process, ev, data)
       print_python_msg(python_msg);                              // Reply with parsed data
       handle_python_msg(python_msg);                             // Handle actions
     }
+    
   }
   PROCESS_END();
 }
