@@ -63,11 +63,11 @@ power_enable()
     _RELAY_STATUS |= INITED;
 
     /* Selects the pin to be configure as the control pin of the relay module */
-    controlPin = 1;
+    controlPin = 4;
 
     /* Configures the control pin */
-    P5SEL &= ~controlPin;
-    P5DIR |= controlPin;
+    P4SEL &= ~controlPin;
+    P4DIR |= controlPin;
   }
 }
 /*---------------------------------------------------------------------------*/
@@ -76,7 +76,7 @@ void
 power_on()
 {
   if((_RELAY_STATUS & INITED)) {
-    P5OUT |= controlPin;
+    P4OUT |= controlPin;
   }
 }
 /*---------------------------------------------------------------------------*/
@@ -84,7 +84,7 @@ void
 power_off()
 {
   if((_RELAY_STATUS & INITED)) {
-    P5OUT &= ~controlPin;
+    P4OUT &= ~controlPin;
   }
 }
 /*---------------------------------------------------------------------------*/
@@ -93,8 +93,8 @@ int8_t
 power_toggle()
 {
   if((_RELAY_STATUS & INITED)) {
-    P5OUT ^= controlPin;
-    if((P5OUT & controlPin)) {
+    P4OUT ^= controlPin;
+    if((P4OUT & controlPin)) {
       return 1;
     }
     return 0;
