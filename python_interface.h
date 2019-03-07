@@ -20,6 +20,10 @@ typedef struct {
     int energy_value; //the energy level of the node
 } data_t;
 
+void remove_node_from_computer(int id);
+
+void add_node_to_computer(int id);
+
 void send_data_to_computer(data_t data);
 
 python_msg_t parse_msg_from_computer(char* msg);
