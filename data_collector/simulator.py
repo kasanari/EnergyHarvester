@@ -31,12 +31,12 @@ class Simulation:
         # energy_too_low = self.get_state().mean(axis=1).iloc[0] < 1.8
         for value in energy_values:
             if energy_values[value].iloc[0] < 1.8:
-                return -100
+                return -10000
 
         if (nulls > 0):
-            reward = -100
+            reward = -10000
         elif (action is Action.CHARGE):
-            reward = -1
+            reward = -2
         elif (action is Action.GATHER):
             reward = 1
         else:
