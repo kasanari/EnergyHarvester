@@ -55,6 +55,8 @@ static char* action_to_string(action_t action) {
         case INVALID:
             return "INVALID";
             break;
+        case RESET:
+            return "RESET";
         default:
             return "-";
             break;
