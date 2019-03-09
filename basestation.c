@@ -9,7 +9,6 @@
 #include "network_info.h"
 #include "power.h"
 
-
 #define MAX_NODES 20
 #define PERIOD CLOCK_SECOND
 #define DATA_TIMEOUT CLOCK_SECOND / 2
@@ -40,7 +39,8 @@ static long charge_time_stamp = 0;
 // number of nodes in the current topology
 static int node_count = 0;
 // current topology of nodes
-typedef struct {
+typedef struct
+{
   int node_id;
   long last_contact;
 } node_t;
@@ -52,35 +52,39 @@ static node_t topology[MAX_NODES] = {};
  * Whenever contact is made with a node use this function to update the information 
  * about topology and last contact.
  */
-static void update_topology(int node_id){
+static void update_topology(int node_id)
+{
   int node_exists = 0;
   int i;
-  // Variant = node_count - i 
-  for( i = 0; i< node_count; ++i){
+  // Variant = node_count - i
+  for (i = 0; i < node_count; ++i)
+  {
 
     // node exist in topology
-    if(node_id == topology[i].node_id ){
+    if (node_id == topology[i].node_id)
+    {
       node_exists = 1;
-      topology[i].last_contact = time_stamp; //update timestamp      
+      topology[i].last_contact = time_stamp; //update timestamp
     }
 
-    // if no contact with node for a while then remove the node    
-    if(topology[i].last_contact < (time_stamp-TOPOLOGY_TIMEOUT)){ 
+    // if no contact with node for a while then remove the node
+    if (topology[i].last_contact < (time_stamp - TOPOLOGY_TIMEOUT))
+    {
       node_count--;
       // remove_node_from_computer(topology[i].node_id);
       topology[i] = topology[node_count]; // overwrite the current index with the last node
-      i--; // loop this index again since another node where put there. 
+      i--;                                // loop this index again since another node where put there.
     }
   }
 
   // if the node in data dont exists and there is place for more nodes
-  if(!node_exists && node_count < MAX_NODES){
-    topology[node_count].node_id =  node_id;
-    topology[node_count++].last_contact = time_stamp;    
-    add_node_to_computer(node_id);    
+  if (!node_exists && node_count < MAX_NODES)
+  {
+    topology[node_count].node_id = node_id;
+    topology[node_count++].last_contact = time_stamp;
+    add_node_to_computer(node_id);
   }
 }
-
 
 /* Callback function for received packets.
  *
@@ -101,7 +105,6 @@ static void recv(struct broadcast_conn *c, const linkaddr_t *from)
   {
     send_data_to_computer(data);
   }
-  
 }
 
 /* A structure holding a pointer to our callback function. */
@@ -122,10 +125,10 @@ static void broadcast()
   ((order_header_t *)tmp_packet)->time_stamp = time_stamp;
   memcpy((tmp_packet + sizeof(order_header_t)), order_buff, sizeof(order_msg_t) * order_count);
   packetbuf_copyfrom(tmp_packet, packet_size);
-  broadcast_send(&bc);  
+  broadcast_send(&bc);
   order_count = 0;
   memset(order_buff, 0, sizeof(order_msg_t) * MAX_NODES);
-  free(tmp_packet); 
+  free(tmp_packet);
 }
 
 static void handle_python_msg(python_msg_t msg)
@@ -135,7 +138,7 @@ static void handle_python_msg(python_msg_t msg)
   {
     leds_toggle(LEDS_BLUE);
     order_buff[order_count].action = msg.action;
-    order_buff[order_count].node_id = msg.node_id;    
+    order_buff[order_count].node_id = msg.node_id;
     order_count++;
   }
   else if (msg.action == CHARGE)
@@ -145,8 +148,9 @@ static void handle_python_msg(python_msg_t msg)
     power_on();
     charge_time_stamp = time_stamp;
   }
-  
-  if((time_stamp - charge_time_stamp) > CHARGE_TIMEOUT){
+
+  if ((time_stamp - charge_time_stamp) > CHARGE_TIMEOUT)
+  {
     power_off();
     charge_time_stamp = time_stamp; // Makes it wait before spamming relay_off again.
   }
@@ -179,18 +183,18 @@ PROCESS_THREAD(basestation_process, ev, data)
     etimer_set(&et_period, PERIOD);
     static struct etimer et_data;
     etimer_set(&et_data, DATA_TIMEOUT);
-	broadcast();
+    broadcast();
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et_data));
 
     // For testing:
     // data_t data1 = {order_count, abs(rand() % 50)};
     // send_data_to_computer(data1);
-    if(!resetting){
+    if (!resetting)
+    {
       transmission_complete();
-	}
+    }
     leds_toggle(LEDS_RED);
-    
-	
+
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et_period));
   }
 
@@ -205,7 +209,7 @@ PROCESS_THREAD(serial_process, ev, data)
   for (;;)
   {
     PROCESS_YIELD();
-    
+
     if (ev == serial_line_event_message)
     {
       char buffer[32];
@@ -213,21 +217,23 @@ PROCESS_THREAD(serial_process, ev, data)
       printf("%s\n", buffer);                                    // Reply with message received
       python_msg_t python_msg = parse_msg_from_computer(buffer); // Parse message to struct
       print_python_msg(python_msg);                              // Reply with parsed data
-	  if(python_msg.action != RESET){
-        handle_python_msg(python_msg); 		// Handle actions 
-	  }
-	  else {
-	    resetting = 1;
-		power_on();
-		order_count = 0;
-		order_number = 0;
-		node_count = 0;
-		static struct etimer reset_period;
+      if (python_msg.action != RESET)
+      {
+        handle_python_msg(python_msg); // Handle actions
+      }
+      else
+      {
+        resetting = 1;
+        power_on();
+        order_count = 0;
+        order_number = 0;
+        node_count = 0;
+        static struct etimer reset_period;
         etimer_set(&reset_period, RESET_PERIOD);
-		PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&reset_period));
-		resetting = 0;		  
-	  }	  
-    }    
+        PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&reset_period));
+        resetting = 0;
+      }
+    }
   }
   PROCESS_END();
 }
