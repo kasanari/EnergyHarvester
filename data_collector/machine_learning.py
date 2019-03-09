@@ -29,9 +29,9 @@ class Memory():
 actions = [Action.GATHER, Action.CHARGE]
 
 nodes = []
-nodes.append(Node(1, 3.3))
-nodes.append(Node(2, 3.3))
-nodes.append(Node(3, 3.3))
+nodes.append(Node(1, energy_level=5))
+nodes.append(Node(2, energy_level=5))
+nodes.append(Node(3, energy_level=5))
 
 memory = Memory(max_size = memory_size)
 
