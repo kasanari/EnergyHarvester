@@ -110,6 +110,9 @@ class NodeManager:
         columns = self.history.columns[:-1]
         return self.history[columns]
 
+    def get_state(self):
+        return self.get_most_recent_state().fillna(value=0)
+
     def get_most_recent_state(self):
         return self.history.tail(1)[self.history.columns[:-1]]
 
