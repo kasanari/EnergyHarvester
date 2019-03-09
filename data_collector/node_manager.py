@@ -9,6 +9,8 @@ class Action(Enum):
     CHARGE = 1
     SLEEP = 2
     GATHER = 3
+    INVALID = 4
+    RESET = 5
 
 """Node states"""
 GATHERING = "gathering"
