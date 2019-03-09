@@ -8,7 +8,7 @@ from node_manager import NodeManager, Node, Action
 from serial_interface import ADD_NODE_HEADER, DATA_HEADER, REMOVE_NODE_HEADER, COMMIT_HEADER
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-
+from learning_agent import LearningAgent
 
 class Plotter:
     def __init__(self, node_manager):
@@ -37,6 +37,7 @@ class DataListener(threading.Thread):
 
         threading.Thread.__init__(self)
 
+        self.agent = LearningAgent(3)
         self.node_manager = node_manager
         self._period = 1
         self._nextCall = time.time()
@@ -44,10 +45,30 @@ class DataListener(threading.Thread):
         self.ser = serial_utils.serial_init()
 
     def run(self):
-        node1 = Node(1, 0)
-        node2 = Node(2, 0)
+        node1 = Node(1, 3.3)
+        node2 = Node(2, 3.3)
+        node3 = Node(3, 3.3)
         manager.add_node(node1)
         manager.add_node(node2)
+        manager.add_node(node3)
+
+        serial_interface.send_action(self.ser, 0, Action.RESET) # Reset node
+
+        # Initialize
+        header = None
+        while header != COMMIT_HEADER:
+            header, node = serial_interface.receive_message(self.ser)
+            if header == DATA_HEADER:
+                print(f'\t{node}')
+                self.node_manager.update_node(node)
+            elif header == COMMIT_HEADER:
+                self.node_manager.commit(time.time())
+
+        # Make first action
+        state = self.node_manager.get_state()
+        action = self.agent.make_action(state)
+        serial_interface.send_action(self.ser, 1, action)
+
         while True:
             print("Fetching data from fog node...")
             header, node = serial_interface.receive_message(self.ser)
@@ -64,9 +85,11 @@ class DataListener(threading.Thread):
                 self.node_manager.remove_node(node.node_id)
             elif header == COMMIT_HEADER:
                 self.node_manager.commit(time.time())
+                state = self.node_manager.get_state()
+                self.agent.learn(state)
+                action = self.agent.make_action(state)
                 print(f'\tSending orders...')
-                serial_interface.send_action(self.ser, 1, Action.GATHER)
-                serial_interface.send_action(self.ser, 2, Action.CHARGE)
+                serial_interface.send_action(self.ser, 1, action)
             
 
 manager = NodeManager()
