@@ -10,7 +10,8 @@ void send_data_to_computer(data_t data) {
     send_msg_to_computer(DATA_HEADER, data);
 }
 
-void add_node_to_computer(data_t data) {
+void add_node_to_computer(int id) {
+  data_t data = {id, 0};
     send_msg_to_computer(ADD_NODE_HEADER, data);
 }
 
@@ -54,6 +55,8 @@ static char* action_to_string(action_t action) {
         case INVALID:
             return "INVALID";
             break;
+        case RESET:
+            return "RESET";
         default:
             return "-";
             break;
