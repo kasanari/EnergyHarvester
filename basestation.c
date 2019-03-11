@@ -143,7 +143,6 @@ static void handle_python_msg(python_msg_t msg)
   else if (msg.action == CHARGE)
   {
     // TODO: code for charging node
-    leds_toggle(LEDS_GREEN);
     power_on();
     charge_time_stamp = time_stamp;
   }

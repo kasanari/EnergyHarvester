@@ -40,6 +40,7 @@
 
 #include "contiki.h"
 #include "power.h"
+#include "dev/leds.h"
 
 static uint8_t controlPin;
 
@@ -75,6 +76,7 @@ power_enable()
 void
 power_on()
 {
+  leds_on(LEDS_GREEN);
   if((_RELAY_STATUS & INITED)) {
     P4OUT |= controlPin;
   }
@@ -83,6 +85,7 @@ power_on()
 void
 power_off()
 {
+  leds_off(LEDS_GREEN);
   if((_RELAY_STATUS & INITED)) {
     P4OUT &= ~controlPin;
   }
@@ -92,6 +95,7 @@ power_off()
 int8_t
 power_toggle()
 {
+  leds_toggle(LEDS_GREEN);
   if((_RELAY_STATUS & INITED)) {
     P4OUT ^= controlPin;
     if((P4OUT & controlPin)) {
