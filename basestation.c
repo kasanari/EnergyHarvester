@@ -117,7 +117,6 @@ static struct broadcast_conn bc;
 // this function will brodcast the order_buff to all the field_nodes and reset it to 0
 static void broadcast()
 {
-  order_number++;
   int packet_size = sizeof(order_header_t) + sizeof(order_msg_t) * order_count;
   void *tmp_packet = malloc(packet_size);
   ((order_header_t *)tmp_packet)->order_number = order_number;
@@ -191,6 +190,7 @@ PROCESS_THREAD(basestation_process, ev, data)
     // send_data_to_computer(data1);
     if (!resetting)
     {
+      order_number++;
       transmission_complete();
     }
     leds_toggle(LEDS_RED);
