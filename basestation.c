@@ -161,7 +161,7 @@ PROCESS_THREAD(basestation_process, ev, data)
 
   /* Open the broadcast handle, use the rime channel
    * defined by CLICKER_CHANNEL. */
-  broadcast_open(&bc, CLICKER_CHANNEL, &bc_callback);
+  broadcast_open(&bc, MAIN_CHANNEL, &bc_callback);
   /* Set the radio's channel to IEEE802_15_4_CHANNEL */
   cc2420_set_channel(IEEE802_15_4_CHANNEL);
   /* Set the radio's transmission power. */

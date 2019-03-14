@@ -102,9 +102,7 @@ PROCESS_THREAD(client_process, ev, data)
  
   //SENSORS_ACTIVATE(phidgets); 
 
-  broadcast_open(&bc, CLICKER_CHANNEL, &bc_callback);  
-  //unicast_open(&uc, CLICKER_CHANNEL, &uc_callback);
-
+  broadcast_open(&bc, MAIN_CHANNEL, &bc_callback);  
   cc2420_set_channel(IEEE802_15_4_CHANNEL);
 
   cc2420_set_txpower(CC2420_TX_POWER);

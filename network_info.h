@@ -5,7 +5,7 @@
 #include "common.h"
 
 /* Rime channel used for this application. */
-#define CLICKER_CHANNEL 130
+#define MAIN_CHANNEL 130
 /* IEEE 802.15.4 channel used for this application. */
 #define IEEE802_15_4_CHANNEL 16
 /* Transmission power for this application. */
