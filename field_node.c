@@ -40,8 +40,21 @@ PROCESS(client_process, "Main Process");
 //
 AUTOSTART_PROCESSES(&client_process);
 
+static struct broadcast_conn bc;
 
+void transmit()
+{
+    status_msg_t status;   
+    status.node_id = 11;
+    status.order_number = 1;
+		leds_toggle(LEDS_GREEN);	
+	  //int phidget_value = phidgets.value(PHIDGET3V_2);
+    status.energy_value = 2000;
 
+		packetbuf_copyfrom(&status, sizeof(status_msg_t));
+		printf("Sent message. id=%d, order_number=%d, energy_value+%d \n", status.node_id, status.order_number, status.energy_value);
+		broadcast_send(&bc);
+}
 
 
 static void recv(struct broadcast_conn *c, const linkaddr_t *from)
@@ -66,7 +79,6 @@ static void recv(struct broadcast_conn *c, const linkaddr_t *from)
 */
  
 
-static struct broadcast_conn bc;
 
 static struct broadcast_callbacks bc_callback = {recv};
 
@@ -79,21 +91,6 @@ static struct broadcast_callbacks bc_callback = {recv};
 
 //TIMER
 //static struct etimer et1, et2, et3, et4;
-void transmit()
-{
-    status_msg_t status;
-    
-    status.node_id = 11;
-    status.order_number = 1;
-	
-	  //int phidget_value = phidgets.value(PHIDGET3V_2);
-    status.energy_value = 2000;
-		
-		packetbuf_copyfrom(&status, sizeof(status_msg_t));
-		printf("Sent message. id=%d, order_number=%d, energy_value+%d \n", status.node_id, status.order_number, status.energy_value);
-		broadcast_send(&bc);
-		
-}
 
 void sleep()
 {
