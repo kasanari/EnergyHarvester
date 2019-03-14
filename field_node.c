@@ -10,22 +10,7 @@
 #include "network_info.h"
 #include "common.h"
 #include "dev/z1-phidgets.h"
-//#include "python_interface.h"
 
-
-
-int recievedMessage;
-
-int dataptr;
-int energyReading = 100;
-char s_v ='S';
-const uint16_t threshold2 = 80;
-const uint16_t threshold1 = 40;
-const uint16_t threshold0 = 20;		
-bool b_mess = true;
-//bool u_mess = true;
-int rime_channel = CLICKER_CHANNEL;
-int ieee_channel = IEEE802_15_4_CHANNEL;
 linkaddr_t bc_addr;
 
 int count = 4100;
@@ -129,19 +114,3 @@ PROCESS_THREAD(client_process, ev, data)
   broadcast_close(&bc);
 PROCESS_END();
 }
-
-/*PROCESS_THREAD(energy_reading, ev, data)
-{
-	PROCESS_BEGIN();
-	while(1)
-	{
-		count -= 100;
-		if(count <= 1500)
-		{
-			
-		}
-
-
-	}
-	PROCESS_END();
-}*/
