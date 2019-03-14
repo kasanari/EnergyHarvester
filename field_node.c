@@ -11,104 +11,79 @@
 #include "common.h"
 #include "dev/z1-phidgets.h"
 
-linkaddr_t bc_addr;
+#define USE_BROADCAST 0
 
-int count = 4100;
+linkaddr_t basestation_address;
 
+static void recv_uc(struct unicast_conn *c, const linkaddr_t *from);
+static void recv_bc(struct broadcast_conn *c, const linkaddr_t *from);
 
-
-//message_t message;
-
-PROCESS(client_process, "Main Process");
-//PROCESS(energy_reading, "Energy Reader");
-//PROCESS();
-//
-AUTOSTART_PROCESSES(&client_process);
-
+static struct unicast_conn uc;
 static struct broadcast_conn bc;
+static struct broadcast_callbacks bc_callback = {recv_bc};
+static const struct unicast_callbacks uc_callback = {recv_uc};
+
+int voltage;
+
+status_msg_t status = {0, 1, 5};
 
 void transmit()
 {
-    status_msg_t status;   
-    status.node_id = 11;
-    status.order_number = 1;
-		leds_toggle(LEDS_GREEN);	
-	  //int phidget_value = phidgets.value(PHIDGET3V_2);
-    status.energy_value = 2000;
-
+	  voltage = phidgets.value(PHIDGET3V_2);
+		status.node_id = linkaddr_node_addr.u8[0];
+    status.energy_value = voltage;
 		packetbuf_copyfrom(&status, sizeof(status_msg_t));
 		printf("Sent message. id=%d, order_number=%d, energy_value+%d \n", status.node_id, status.order_number, status.energy_value);
-		broadcast_send(&bc);
+		if (USE_BROADCAST) {
+			broadcast_send(&bc);
+		} else {
+			unicast_send(&uc, &basestation_address);
+		}
+	
+		//	
+		//voltage = voltage - 1;
+		/*if (voltage < 0) {
+			voltage = 50;
+		}*/
+}
+
+static void recv_uc(struct unicast_conn *c, const linkaddr_t *from)
+{
+  printf("unicast message received from %d.%d\n",
+         from->u8[0], from->u8[1]);
 }
 
 
-static void recv(struct broadcast_conn *c, const linkaddr_t *from)
+static void recv_bc(struct broadcast_conn *c, const linkaddr_t *from)
 {
-  leds_toggle(LEDS_BLUE);	
-	printf("Message recieved");
+	basestation_address = *from;
+	//memcpy(&basestation_address, &from, sizeof(linkaddr_t));
 	transmit();
-	memcpy(&bc_addr, &from, sizeof(from));
+	leds_toggle(LEDS_BLUE);	
+	printf("Message received");
 	
-	
+
 }
 
 
-
-/*static void recv_uc(struct unicast_conn *c, const linkaddr_t *from)
-{
-  	//if message recieved then set u_mess to true
-  	u_mess = true;
-	memcpy(&uc_addr, &from, sizeof(from));
-	leds_toggle(0b101);
-}
-*/
- 
-
-
-static struct broadcast_callbacks bc_callback = {recv};
-
- 
-
-//static struct unicast_conn uc;
-
-//static struct unicast_callbacks uc_callback = {recv_uc};
-
-
-//TIMER
-//static struct etimer et1, et2, et3, et4;
-
-void sleep()
-{
-	
-}
-
-void energised()
-{}
-
-void send_window()
-{}
-
-void await_order()
-{}
-
-void exec_order()
-{}
-
-
+PROCESS(client_process, "Main Process");
+AUTOSTART_PROCESSES(&client_process);
 
 PROCESS_THREAD(client_process, ev, data)
 {
   PROCESS_BEGIN();
  
-  //SENSORS_ACTIVATE(phidgets); 
+  SENSORS_ACTIVATE(phidgets); 
 
   broadcast_open(&bc, MAIN_CHANNEL, &bc_callback);  
-  cc2420_set_channel(IEEE802_15_4_CHANNEL);
+	unicast_open(&uc, UC_CHANNEL, &uc_callback);  
+
+	cc2420_set_channel(IEEE802_15_4_CHANNEL);
 
   cc2420_set_txpower(CC2420_TX_POWER);
 
-  PROCESS_YIELD();
-  
+  PROCESS_WAIT_EVENT_UNTIL(0);
+	
   broadcast_close(&bc);
-PROCESS_END();
+	PROCESS_END();
 }

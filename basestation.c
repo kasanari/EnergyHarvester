@@ -10,11 +10,13 @@
 #include "power.h"
 
 #define MAX_NODES 20
-#define PERIOD CLOCK_SECOND
-#define DATA_TIMEOUT CLOCK_SECOND / 2
+#define BROADCAST_PERIOD CLOCK_SECOND * 3
+#define ORDER_TIMEOUT CLOCK_SECOND * 1
 #define TOPOLOGY_TIMEOUT CLOCK_SECOND * 100
 #define CHARGE_TIMEOUT CLOCK_SECOND * 5
 #define RESET_PERIOD CLOCK_SECOND * 10
+
+#define TRANSMIT_EVENT 66404
 
 /* Declare our "main" process, the basestation_process */
 PROCESS(basestation_process, "Clicker basestation");
@@ -47,6 +49,18 @@ typedef struct
 
 static node_t topology[MAX_NODES] = {};
 
+
+static void recv(struct broadcast_conn *c, const linkaddr_t *from);
+/* A structure holding a pointer to our callback function. */
+static struct broadcast_callbacks bc_callback = {recv};
+
+/* Broadcast handle to receive and send (identified) broadcast
+ * packets. */
+static struct broadcast_conn bc;
+
+static const struct unicast_callbacks uc_callback = {recv};
+static struct unicast_conn uc;
+
 /* Function for updating topology
  *
  * Whenever contact is made with a node use this function to update the information 
@@ -78,41 +92,35 @@ static void update_topology(int node_id)
   }
 
   // if the node in data dont exists and there is place for more nodes
-  if (!node_exists && node_count < MAX_NODES)
+  if (!node_exists && (node_count < MAX_NODES))
   {
     topology[node_count].node_id = node_id;
-    topology[node_count++].last_contact = time_stamp;
+    topology[node_count].last_contact = time_stamp;
     add_node_to_computer(node_id);
+    node_count++;
   }
 }
 
-/* Callback function for received packets.
- *
- * Whenever this node receives a packet for its broadcast handle,
- * this function will be called.
- */
 static void recv(struct broadcast_conn *c, const linkaddr_t *from)
 {
-  uint8_t *ptr;
-  status_msg_t status_msg;
-  ptr = packetbuf_dataptr();
-  memcpy(&status_msg, ptr, sizeof(status_msg_t));
-  data_t data;
-  data.node_id = status_msg.node_id;
-  data.energy_value = status_msg.energy_value;
-  update_topology(data.node_id);
-  if (order_number == status_msg.order_number && !resetting)
-  {
-    send_data_to_computer(data);
-  }
+    uint8_t *ptr;
+    status_msg_t status_msg;
+    ptr = packetbuf_dataptr();
+    memcpy(&status_msg, ptr, sizeof(status_msg_t));
+    data_t data;
+    data.node_id = status_msg.node_id;
+    data.energy_value = status_msg.energy_value;
+
+    if (!resetting)
+    {
+      send_data_to_computer(data);
+    } else {
+      update_topology(data.node_id);
+    }
+    leds_toggle(LEDS_BLUE);
 }
 
-/* A structure holding a pointer to our callback function. */
-static struct broadcast_callbacks bc_callback = {recv};
 
-/* Broadcast handle to receive and send (identified) broadcast
- * packets. */
-static struct broadcast_conn bc;
 
 // this function will brodcast the order_buff to all the field_nodes and reset it to 0
 static void broadcast()
@@ -135,7 +143,7 @@ static void handle_python_msg(python_msg_t msg)
   time_stamp = msg.time_stamp;
   if (msg.action != CHARGE && order_count < MAX_NODES)
   {
-    leds_toggle(LEDS_BLUE);
+    power_off();
     order_buff[order_count].action = msg.action;
     order_buff[order_count].node_id = msg.node_id;
     order_count++;
@@ -160,8 +168,9 @@ PROCESS_THREAD(basestation_process, ev, data)
   PROCESS_BEGIN();
 
   /* Open the broadcast handle, use the rime channel
-   * defined by CLICKER_CHANNEL. */
+   * defined by MAIN_CHANNEL. */
   broadcast_open(&bc, MAIN_CHANNEL, &bc_callback);
+  unicast_open(&uc, UC_CHANNEL, &uc_callback);
   /* Set the radio's channel to IEEE802_15_4_CHANNEL */
   cc2420_set_channel(IEEE802_15_4_CHANNEL);
   /* Set the radio's transmission power. */
@@ -174,27 +183,29 @@ PROCESS_THREAD(basestation_process, ev, data)
   /* Main loop for sending periodic broadcasts to nodes,
    * and transmission_complete to computer */
 
+  static struct etimer et_data;
+  static struct etimer et_period;
   for (;;)
   {
     // Set events to fire after 2 different periods after this time
-    static struct etimer et_period;
-    etimer_set(&et_period, PERIOD);
-    static struct etimer et_data;
-    etimer_set(&et_data, DATA_TIMEOUT);
-    broadcast();
-    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et_data));
 
-    // For testing:
-    // data_t data1 = {order_count, abs(rand() % 50)};
-    // send_data_to_computer(data1);
     if (!resetting)
     {
-      order_number++;
-      transmission_complete();
-    }
-    leds_toggle(LEDS_RED);
-
+    // Send request for data
+    broadcast();
+    leds_on(LEDS_RED);
+    // Wait for replies
+    etimer_set(&et_period, BROADCAST_PERIOD);
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et_period));
+
+    order_number++;
+    transmission_complete();
+
+    //Wait for orders
+    leds_off(LEDS_RED);
+    etimer_set(&et_data, ORDER_TIMEOUT);
+    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et_data));
+    }
   }
 
   broadcast_close(&bc);
