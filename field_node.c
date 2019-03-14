@@ -12,32 +12,21 @@
 #include "dev/z1-phidgets.h"
 //#include "python_interface.h"
 
+#define CLICKER_CHANNEL_UC 120
 
-
-int recievedMessage;
-
-int dataptr;
-int energyReading = 100;
-char s_v ='S';
-const uint16_t threshold2 = 80;
 const uint16_t threshold1 = 40;
 const uint16_t threshold0 = 20;		
-bool b_mess = true;
-//bool u_mess = true;
 int rime_channel = CLICKER_CHANNEL;
 int ieee_channel = IEEE802_15_4_CHANNEL;
-linkaddr_t bc_addr;
+linkaddr_t bc_addr, addr;
+
+
+uint8_t sFlag = 0, aFlag = 0, swFlag = 0, aoFlag = 0, eoFLag = 0, cFlag = 0;
 
 int count = 4100;
 
 
-
-//message_t message;
-
 PROCESS(client_process, "Main Process");
-//PROCESS(energy_reading, "Energy Reader");
-//PROCESS();
-//
 AUTOSTART_PROCESSES(&client_process);
 
 
@@ -47,61 +36,65 @@ AUTOSTART_PROCESSES(&client_process);
 static void recv(struct broadcast_conn *c, const linkaddr_t *from)
 {
   leds_toggle(LEDS_BLUE);	
-	printf("Message recieved");
+	memcpy(&bc_addr, &from, sizeof(linkaddr_t));
 	transmit();
-	memcpy(&bc_addr, &from, sizeof(from));
-	
-	
 }
 
 
 
-/*static void recv_uc(struct unicast_conn *c, const linkaddr_t *from)
+static void recv_uc(struct unicast_conn *c, const linkaddr_t *from)
 {
-  	//if message recieved then set u_mess to true
-  	u_mess = true;
-	memcpy(&uc_addr, &from, sizeof(from));
-	leds_toggle(0b101);
+ 	
 }
-*/
  
 
 static struct broadcast_conn bc;
-
 static struct broadcast_callbacks bc_callback = {recv};
 
  
 
-//static struct unicast_conn uc;
+static struct unicast_conn uc;
+static struct unicast_callbacks uc_callback = {recv_uc};
 
-//static struct unicast_callbacks uc_callback = {recv_uc};
 
-
-//TIMER
-//static struct etimer et1, et2, et3, et4;
 void transmit()
 {
+    leds_toggle(LEDS_GREEN);
     status_msg_t status;
     
     status.node_id = 11;
     status.order_number = 1;
 	
-	  //int phidget_value = phidgets.value(PHIDGET3V_2);
-    status.energy_value = 2000;
-		
+	  int phidget_value = phidgets.value(PHIDGET3V_2);
+    status.energy_value = phidget_value;
+		printf("%d \n", phidget_value);
 		packetbuf_copyfrom(&status, sizeof(status_msg_t));
-		printf("Sent message. id=%d, order_number=%d, energy_value+%d \n", status.node_id, status.order_number, status.energy_value);
-		broadcast_send(&bc);
+		unicast_send(&uc, &bc_addr);
 		
 }
 
-void sleep()
+/*void sleep()
 {
-	
+  leds_toggle(LEDS_RED);
+	while (count<4100)
+	{
+	  count+=100;
+	  
+	}
+	cFlag = 0;
+	sFlag = 0;
+	if(eFlag = 0)
+	{
+	  eFlag = 1;
+	  energised();
+	}
 }
 
 void energised()
-{}
+{
+  leds_toggle(LEDS_GREEN);
+  
+}
 
 void send_window()
 {}
@@ -111,17 +104,19 @@ void await_order()
 
 void exec_order()
 {}
-
+*/
 
 
 PROCESS_THREAD(client_process, ev, data)
 {
   PROCESS_BEGIN();
  
-  //SENSORS_ACTIVATE(phidgets); 
+  SENSORS_ACTIVATE(phidgets); 
+  
+  
 
   broadcast_open(&bc, CLICKER_CHANNEL, &bc_callback);  
-  //unicast_open(&uc, CLICKER_CHANNEL, &uc_callback);
+  unicast_open(&uc, CLICKER_CHANNEL_UC, &uc_callback);
 
   cc2420_set_channel(IEEE802_15_4_CHANNEL);
 
@@ -130,21 +125,8 @@ PROCESS_THREAD(client_process, ev, data)
   PROCESS_YIELD();
   
   broadcast_close(&bc);
+  unicast_close(&uc);
 PROCESS_END();
 }
 
-/*PROCESS_THREAD(energy_reading, ev, data)
-{
-	PROCESS_BEGIN();
-	while(1)
-	{
-		count -= 100;
-		if(count <= 1500)
-		{
-			
-		}
 
-
-	}
-	PROCESS_END();
-}*/
